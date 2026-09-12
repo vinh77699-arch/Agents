@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: research-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - POSTGRES_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/research_agent
+      - REDIS_URL=redis://redis:6379
+      - CHROMA_PERSIST_DIR=/data/chroma
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-anthropic}
+      - MAX_SEARCH_CALLS=${MAX_SEARCH_CALLS:-15}
+      - CREDIBILITY_THRESHOLD=${CREDIBILITY_THRESHOLD:-5.0}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - chroma_data:/data/chroma
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - agent_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: research-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Internal Docker URL used by Next.js server-side proxy only (not exposed to browser)
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - agent_net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: research-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=research_agent
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - agent_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: research-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - agent_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:
+
+networks:
+  agent_net:
+    driver: bridge
