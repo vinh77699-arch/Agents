@@ -24,13 +24,24 @@ class Settings(BaseSettings):
     # App limits
     max_search_calls: int = 15
     max_retry_loops: int = 2
-    credibility_threshold: float = 5.0
+    credibility_threshold: float = 6.0
     min_credible_sources_per_question: int = 2
     search_timeout: int = 30
     scrape_timeout: int = 15
 
     # Embedding
     default_embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+
+    # Auth
+    jwt_secret: str = "change-me-in-production-use-long-random-string"
+    jwt_expire_hours: int = 24
+    admin_email: str = "admin@research.local"
+
+    # SQLite (local persistence, postgres_url used in production)
+    sqlite_path: str = "research_agent.db"
+
+    # Daily quota
+    default_daily_quota: int = 5
 
     # Logging
     log_level: str = "INFO"

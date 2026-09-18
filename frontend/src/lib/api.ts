@@ -1,8 +1,6 @@
 import type { PipelineEvent } from "@/types";
+import { authHeaders } from "@/lib/auth";
 
-// Always use the Next.js rewrite proxy (/api/v1 → backend).
-// For local dev without Docker, set NEXT_PUBLIC_API_URL=http://localhost:8000
-// and start the backend separately.
 const API_BASE =
   typeof window !== "undefined" && process.env.NEXT_PUBLIC_API_URL
     ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1`
@@ -11,12 +9,14 @@ const API_BASE =
 export async function* streamResearch(topic: string): AsyncGenerator<PipelineEvent> {
   const response = await fetch(`${API_BASE}/research/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ topic }),
   });
 
   if (!response.ok) {
-    throw new Error(`API error: ${response.status} ${response.statusText}`);
+    let detail = response.statusText;
+    try { detail = (await response.json()).detail || detail; } catch {}
+    throw new Error(detail);
   }
 
   const reader = response.body?.getReader();

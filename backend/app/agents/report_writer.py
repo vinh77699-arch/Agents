@@ -7,7 +7,7 @@ from datetime import datetime
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.core.config import get_llm_client
+from app.core.config import get_llm_client, settings
 from app.core.state import ResearchState, ProgressUpdate, AgentStatus
 
 logger = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ def _assemble_markdown_report(
     # Source Quality Report
     lines.append("## Source Quality Report\n")
     lines.append(f"**Total sources evaluated:** {total_credible + total_discarded}")
-    lines.append(f"**Credible sources (threshold ≥ {5.0}):** {total_credible}")
+    lines.append(f"**Credible sources (threshold ≥ {settings.credibility_threshold}):** {total_credible}")
     lines.append(f"**Discarded sources:** {total_discarded}\n")
 
     if all_sources:
