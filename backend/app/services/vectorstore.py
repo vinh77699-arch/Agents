@@ -53,9 +53,22 @@ class VectorStoreService:
             logger.error(f"[VectorStore] Collection error: {e}")
             raise
 
+    def _get_or_create_by_name(self, collection_name: str):
+        """Get or create a collection by its exact name."""
+        client = self._get_client()
+        return client.get_or_create_collection(
+            name=collection_name,
+            embedding_function=self._get_embedding_fn(),
+            metadata={"hnsw:space": "cosine"},
+        )
+
     def add_sources(self, session_id: str, sources: List[dict]) -> int:
-        """Chunk and index source content into ChromaDB."""
-        collection = self.get_or_create_collection(session_id)
+        """Chunk and index source content into ChromaDB.
+        session_id may be a full collection name (userdoc_*) or a session UUID."""
+        if session_id.startswith("userdoc_") or session_id.startswith("research_"):
+            collection = self._get_or_create_by_name(session_id)
+        else:
+            collection = self.get_or_create_collection(session_id)
         documents, metadatas, ids = [], [], []
 
         for source in sources:
@@ -126,11 +139,16 @@ class VectorStoreService:
             logger.error(f"[VectorStore] Retrieve error: {e}")
             return []
 
-    def delete_collection(self, session_id: str):
+    def delete_collection(self, name: str):
+        """Delete a collection by its full name or session_id prefix."""
         try:
             client = self._get_client()
-            collection_name = f"research_{session_id[:16].replace('-', '_')}"
-            client.delete_collection(collection_name)
+            # If it looks like a full collection name (contains underscore pattern), use directly
+            # otherwise treat as session_id and build the research_ prefix
+            if name.startswith("research_") or name.startswith("userdoc_"):
+                client.delete_collection(name)
+            else:
+                client.delete_collection(f"research_{name[:16].replace('-', '_')}")
         except Exception:
             pass
 

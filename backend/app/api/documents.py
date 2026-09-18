@@ -58,7 +58,7 @@ async def upload_document(
     collection_name = f"userdoc_{user_id[:16]}_{doc_id[:8]}"
     now = datetime.now(timezone.utc).isoformat()
 
-    # Index into ChromaDB
+    # Index into ChromaDB (sync, run in executor to avoid blocking)
     source_dict = {
         "source_id": doc_id[:8],
         "url": f"local://{file.filename}",
@@ -67,7 +67,9 @@ async def upload_document(
         "total_score": 8.0,
     }
     try:
-        await vector_store.add_sources(collection_name, [source_dict])
+        import asyncio
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, lambda: vector_store.add_sources(collection_name, [source_dict]))
     except Exception as e:
         logger.error(f"[Documents] ChromaDB indexing error: {e}")
         raise HTTPException(status_code=500, detail=f"Lỗi lập chỉ mục: {e}")
