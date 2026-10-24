@@ -13,22 +13,23 @@ from app.services.vectorstore import vector_store
 logger = logging.getLogger(__name__)
 
 SYNTHESIS_SYSTEM = """You are a meticulous academic writer. Write a well-structured section for a research report.
+IMPORTANT: Write ALL content in Vietnamese (Tiếng Việt). Use formal, academic Vietnamese prose.
 
 RULES:
 1. Only use information from the provided source chunks — do NOT invent facts
 2. Every factual claim MUST include a citation in format [src_id]
 3. Use multiple sources per paragraph when available
-4. Write in clear, academic prose (not bullet points)
+4. Write in clear, academic Vietnamese prose (not bullet points)
 5. If sources disagree, note the disagreement explicitly
 6. If evidence is insufficient, state that clearly
 
 CITATION FORMAT: After each sentence with a fact, append [source_id] in brackets.
-Example: "The global temperature has risen by 1.1°C since pre-industrial times [a3f2b1]."
+Example: "Nhiệt độ toàn cầu đã tăng 1,1°C so với thời kỳ tiền công nghiệp [a3f2b1]."
 
 Respond with valid JSON only:
 {
-  "content": "<the written section with [source_id] citations>",
-  "key_claims": ["<claim 1> [source_id]", "<claim 2> [source_id]"],
+  "content": "<nội dung bằng tiếng Việt với trích dẫn [source_id]>",
+  "key_claims": ["<luận điểm 1> [source_id]", "<luận điểm 2> [source_id]"],
   "sources_used": ["source_id_1", "source_id_2"]
 }"""
 
@@ -145,12 +146,12 @@ async def _synthesize_with_chunks(
             }
 
     llm = get_llm_client()
-    prompt = f"""Research sub-question: {question}
+    prompt = f"""Câu hỏi nghiên cứu: {question}
 
-Source chunks (each prefixed with [source_id]):
+Các đoạn nguồn (mỗi đoạn có tiền tố [source_id]):
 {context}
 
-Write a comprehensive section answering this sub-question. Cite every fact with the relevant [source_id]."""
+Viết một phần nội dung toàn diện bằng tiếng Việt để trả lời câu hỏi nghiên cứu này. Trích dẫn mọi sự kiện bằng [source_id] tương ứng."""
 
     response = await llm.ainvoke([
         SystemMessage(content=SYNTHESIS_SYSTEM),

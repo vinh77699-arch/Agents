@@ -15,18 +15,19 @@ into specific, independently searchable sub-questions that together provide comp
 
 Rules:
 - Generate exactly 4-6 sub-questions
+- Write sub-questions in Vietnamese (Tiếng Việt)
 - Each sub-question must be independently searchable (no cross-dependencies)
 - Cover different facets: background, current state, mechanisms, evidence, implications, critiques
 - Be specific enough to yield focused search results
-- For each sub-question, also provide 2-3 concrete search query strings (what you'd type in Google)
+- For each sub-question, provide 2-3 concrete search query strings in English (for better search results)
 
 Respond ONLY with valid JSON in this exact format:
 {
   "sub_questions": [
     {
-      "question": "...",
+      "question": "câu hỏi bằng tiếng Việt...",
       "rationale": "...",
-      "search_queries": ["query1", "query2", "query3"]
+      "search_queries": ["english query1", "english query2", "english query3"]
     }
   ]
 }"""
